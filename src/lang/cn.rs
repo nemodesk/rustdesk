@@ -1,6 +1,10 @@
 lazy_static::lazy_static! {
 pub static ref T: std::collections::HashMap<&'static str, &'static str> =
     [
+        ("In the same region", "两台设备务必在同一地域！"),
+        ("Select the nearest region", "选择离您最近的地域降低延迟"),
+        ("No login", "未登录"),
+        ("Expired", "账号已欠费"),
         ("Status", "状态"),
         ("Your Desktop", "你的桌面"),
         ("desk_tip", "你的桌面可以通过下面的 ID 和密码访问。"),

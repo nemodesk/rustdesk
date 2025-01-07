@@ -313,6 +313,12 @@ impl Client {
                                 Ok(punch_hole_response::Failure::ID_NOT_EXIST) => {
                                     bail!("ID does not exist");
                                 }
+                                Ok(punch_hole_response::Failure::NO_LOGIN) => {
+                                    bail!("No login");
+                                }
+                                Ok(punch_hole_response::Failure::EXPIRED) => {
+                                    bail!("Expired");
+                                }
                                 Ok(punch_hole_response::Failure::OFFLINE) => {
                                     bail!("Remote desktop is offline");
                                 }
