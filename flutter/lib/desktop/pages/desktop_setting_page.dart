@@ -39,6 +39,7 @@ const double _kContentFontSize = 15;
 const Color _accentColor = MyTheme.accent;
 const String _kSettingPageControllerTag = 'settingPageController';
 const String _kSettingPageTabKeyTag = 'settingPageTabKey';
+const REGION_DOMAIN = String.fromEnvironment("REGION_DOMAIN", defaultValue: "127.0.0.1");
 
 class _TabInfo {
   late final SettingsTabKey key;
@@ -1445,6 +1446,7 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
       return Offstage();
     }
 
+    
     return _Card(
       title: 'Network',
       children: [
@@ -1460,26 +1462,7 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
                     style: TextStyle(fontSize: _kContentFontSize),
                   ),
                   enabled: !locked,
-                  onTap: () => showServerSettings(gFFI.dialogManager),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                  minLeadingWidth: 0,
-                  horizontalTitleGap: 10,
-                ),
-              if (!hideServer && !hideProxy)
-                Divider(height: 1, indent: 16, endIndent: 16),
-              if (!hideProxy)
-                ListTile(
-                  leading:
-                      Icon(Icons.network_ping_outlined, color: _accentColor),
-                  title: Text(
-                    translate('Socks5/Http(s) Proxy'),
-                    style: TextStyle(fontSize: _kContentFontSize),
-                  ),
-                  enabled: !locked,
-                  onTap: changeSocks5Proxy,
+                  onTap: () => showServerSettings(gFFI.dialogManager,REGION_DOMAIN),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1494,6 +1477,7 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
     );
   }
 }
+
 
 class _Display extends StatefulWidget {
   const _Display({Key? key}) : super(key: key);

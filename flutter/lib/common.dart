@@ -3150,7 +3150,7 @@ class _ReconnectCountDownButtonState extends State<_ReconnectCountDownButton> {
   Widget build(BuildContext context) {
     return dialogButton(
       '${translate('Reconnect')} (${_countdownSeconds}s)',
-      onPressed: widget.onPressed,
+      onPressed: () async {},
       isOutline: true,
     );
   }

@@ -83,6 +83,8 @@ message PunchHoleResponse {
     OFFLINE = 2;
     LICENSE_MISMATCH = 3;
     LICENSE_OVERUSE = 4;
+    NO_LOGIN = 8;
+    EXPIRED = 9;        
   }
   Failure failure = 3;
   string relay_server = 4;
