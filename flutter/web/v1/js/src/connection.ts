@@ -111,6 +111,12 @@ export default class Connection {
           case rendezvous.PunchHoleResponse_Failure.ID_NOT_EXIST:
             this.msgbox("error", "Error", "ID does not exist");
             break;
+          case rendezvous.PunchHoleResponse_Failure.NO_LOGIN:
+            this.msgbox("error", "Error", "No login");
+            break;
+          case rendezvous.PunchHoleResponse_Failure.EXPIRED:
+            this.msgbox("error", "Error", "Account expired");
+            break;            
           case rendezvous.PunchHoleResponse_Failure.OFFLINE:
             this.msgbox("error", "Error", "Remote desktop is offline");
             break;

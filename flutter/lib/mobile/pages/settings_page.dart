@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:flutter/material.dart';
 
 import '../../common.dart';
 import '../../common/widgets/dialog.dart';
@@ -37,7 +38,7 @@ class SettingsPage extends StatefulWidget implements PageShape {
 }
 
 const url = 'https://rustdesk.com/';
-
+const REGION_DOMAIN = String.fromEnvironment("REGION_DOMAIN", defaultValue: "127.0.0.1");
 enum KeepScreenOn {
   never,
   duringControlled,
@@ -658,7 +659,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 title: Text(translate('ID/Relay Server')),
                 leading: Icon(Icons.cloud),
                 onPressed: (context) {
-                  showServerSettings(gFFI.dialogManager);
+                  showServerSettings(gFFI.dialogManager,REGION_DOMAIN);
                 }),
           if (!isIOS && !_hideNetwork && !_hideProxy)
             SettingsTile(
