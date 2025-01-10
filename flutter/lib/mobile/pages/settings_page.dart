@@ -794,19 +794,19 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 ),
                 leading: Icon(Icons.info)),
             SettingsTile(
-                title: Text(translate("Build Date")),
+                title: Text(translate("服务供应商")),
                 value: Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(_buildDate),
+                  child: Text('青岛满汉全席'),
                 ),
                 leading: Icon(Icons.query_builder)),
             if (isAndroid)
               SettingsTile(
-                  onPressed: (context) => onCopyFingerprint(_fingerprint),
-                  title: Text(translate("Fingerprint")),
+                  onPressed: (context) => onCopyFingerprint('18511085089'),
+                  title: Text('客服微信'),
                   value: Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(_fingerprint),
+                    child: Text('18511085089'),
                   ),
                   leading: Icon(Icons.fingerprint)),
             SettingsTile(

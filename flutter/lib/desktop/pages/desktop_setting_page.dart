@@ -1910,11 +1910,11 @@ class _AboutState extends State<_About> {
                   child: Text('${translate('Version')}: $version')
                       .marginSymmetric(vertical: 4.0)),
               SelectionArea(
-                  child: Text('${translate('Build Date')}: $buildDate')
+                  child: Text('青岛满汉全席为您提供服务')
                       .marginSymmetric(vertical: 4.0)),
               if (!isWeb)
                 SelectionArea(
-                    child: Text('${translate('Fingerprint')}: $fingerprint')
+                    child: Text('客户微信: 18511085089')
                         .marginSymmetric(vertical: 4.0)),
               InkWell(
                   onTap: () {
