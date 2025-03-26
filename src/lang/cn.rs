@@ -3,7 +3,7 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
     [
         ("In the same region", "两台设备务必选择相同地域！"),
         ("Select the nearest region", "选择离您最近的地域降低延迟"),
-        ("No login", "未登录"),
+        ("No login", "被控设备未登录"),
         ("Expired", "账号已欠费"),
         ("Status", "状态"),
         ("Your Desktop", "你的桌面"),
