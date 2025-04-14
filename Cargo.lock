@@ -2928,7 +2928,7 @@ dependencies = [
  "socket2 0.3.19",
  "sodiumoxide",
  "sysinfo",
- "thiserror",
+ "thiserror 1.0.61",
  "tokio",
  "tokio-native-tls",
  "tokio-rustls 0.26.0",
