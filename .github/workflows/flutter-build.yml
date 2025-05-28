@@ -87,6 +87,8 @@ jobs:
 
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Restore bridge files
         uses: actions/download-artifact@master
@@ -404,6 +406,8 @@ jobs:
 
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Restore bridge files
         uses: actions/download-artifact@master
@@ -413,7 +417,7 @@ jobs:
 
       - name: Build rustdesk
         run: |
-          ./build.py --flutter --hwcodec
+          ./build.py --flutter --hwcodec --unix-file-copy-paste
 
       - name: create unsigned dmg
         if: env.UPLOAD_ARTIFACT == 'true'
@@ -489,6 +493,9 @@ jobs:
           brew install nasm yasm
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Install flutter
         uses: subosito/flutter-action@v2
         with:
@@ -594,6 +601,8 @@ jobs:
 
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # $VCPKG_ROOT/vcpkg install --triplet arm64-ios --x-install-root="$VCPKG_ROOT/installed"
 
@@ -666,6 +675,8 @@ jobs:
 
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Import the codesign cert
         if: env.MACOS_P12_BASE64 != null
@@ -787,7 +798,7 @@ jobs:
             sed -i -e "s/osx_minimum_system_version = \"[0-9]*.[0-9]*\"/osx_minimum_system_version = \"${MIN_MACOS_VERSION}\"/" Cargo.toml
             sed -i -e "s/MACOSX_DEPLOYMENT_TARGET = [0-9]*.[0-9]*;/MACOSX_DEPLOYMENT_TARGET = ${MIN_MACOS_VERSION};/" flutter/macos/Runner.xcodeproj/project.pbxproj
           fi
-          ./build.py --flutter --hwcodec ${{ matrix.job.extra-build-args }}
+          ./build.py --flutter --hwcodec --unix-file-copy-paste ${{ matrix.job.extra-build-args }}
 
       - name: create unsigned dmg
         if: env.UPLOAD_ARTIFACT == 'true'
@@ -959,6 +970,9 @@ jobs:
 
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Install flutter
         uses: subosito/flutter-action@v2
         with:
