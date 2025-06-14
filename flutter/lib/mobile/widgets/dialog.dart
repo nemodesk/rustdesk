@@ -155,7 +155,7 @@ void setTemporaryPasswordLengthDialog(
 void showServerSettings(OverlayDialogManager dialogManager, String region_domain ) async {
   try {
     var _text ="";
-    var jsonString = '{"无网络连接":"192.168.0.1"}';
+    var jsonString = '{"北京":"bj.nemodesk.online","上海":"sh.nemodesk.online","南京":"nj.nemodesk.online","成都":"cd.nemodesk.online","广州":"gz.nemodesk.online"}';
     try {
       //创建一个HttpClient
       HttpClient httpClient = HttpClient();
