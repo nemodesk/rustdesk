@@ -189,7 +189,7 @@ void showServerSettings(OverlayDialogManager dialogManager, String region_domain
           final addr = regionMap[v];
           final serverConfig = ServerConfig(
             idServer: addr,            
-            apiServer: 'http://$addr:11114',
+            apiServer: 'http://$addr:21114',
             key: '',
           );
           showServerSettingsWithValue(serverConfig, dialogManager);
