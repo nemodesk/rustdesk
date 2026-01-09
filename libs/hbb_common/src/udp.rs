@@ -100,17 +100,14 @@ impl FramedSocket {
         // 1. 将原始消息序列化为字节数组
         let mut data = msg.write_to_bytes()?; // 转换为 Vec<u8>
 
-        // 2. 伪装：添加 10 到 50 字节的随机填充
-        let mut rng = rand::thread_rng();
-        // 使用 u8 类型存储长度，范围限制在 10 到 255 字节（足够用）
-        let padding_len_u8: u8 = rng.gen_range(10..=50);
+        let padding_len = rand::random::<u8>() % 41 + 10; // 生成 10-50 的随机数
 
-        for _ in 0..padding_len_u8 {
-            data.push(rng.gen()); // 填充随机字节
+        for _ in 0..padding_len {
+            data.push(rand::random::<u8>()); // 每次直接生成随机字节
         }
 
         // 3. 将填充长度作为一个字节拼接到信息的最后
-        data.push(padding_len_u8);
+        data.push(padding_len);
         // 现在，数据包结构是：[原始 Protobuf 数据] + [随机噪音] + [一个字节的噪音长度标记]
 
         let send_data = Bytes::from(data);
