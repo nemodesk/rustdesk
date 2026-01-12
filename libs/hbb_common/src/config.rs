@@ -3171,3 +3171,10 @@ mod tests {
         }
     }
 }
+
+
+impl Config {
+    pub fn get_obfuscate_key() -> [u8; 32] {
+        *b"private-obfs-key-for-isp-2026-01"
+    }
+}

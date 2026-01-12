@@ -60,7 +60,6 @@ use std::{
 use system_shutdown;
 #[cfg(target_os = "windows")]
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
-
 #[cfg(windows)]
 use crate::virtual_display_manager;
 #[cfg(not(any(target_os = "ios")))]

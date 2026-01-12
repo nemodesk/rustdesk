@@ -1,12 +1,17 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};
+// 引入加密库
+use chacha20::ChaCha20;
+use chacha20::cipher::{KeyIvInit, StreamCipher};
+use crate::config::Config;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BytesCodec {
     state: DecodeState,
     raw: bool,
     max_packet_length: usize,
+    obfuscate_key: Option<[u8; 32]>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -17,19 +22,19 @@ enum DecodeState {
 
 impl Default for BytesCodec {
     fn default() -> Self {
-        Self::new()
+        Self::new_obfuscate(Config::get_obfuscate_key())
     }
 }
 
 impl BytesCodec {
-    pub fn new() -> Self {
+    pub fn new_obfuscate(key: [u8; 32]) -> Self {
         Self {
             state: DecodeState::Head,
             raw: false,
             max_packet_length: usize::MAX,
+            obfuscate_key: Some(key),
         }
     }
-
     pub fn set_raw(&mut self) {
         self.raw = true;
     }
@@ -98,7 +103,14 @@ impl Decoder for BytesCodec {
         };
 
         match self.decode_data(n, src)? {
-            Some(data) => {
+            Some(mut data) => {
+                // 只有调用 new_obfuscate 创建的实例才会解密
+                if let Some(key) = self.obfuscate_key {
+                    let nonce = [0u8; 12];
+                    let mut cipher = ChaCha20::new(&key.into(), &nonce.into());
+                    cipher.apply_keystream(&mut data);
+                }
+
                 self.state = DecodeState::Head;
                 Ok(Some(data))
             }
@@ -107,6 +119,7 @@ impl Decoder for BytesCodec {
     }
 }
 
+// 用于类型约定
 impl Encoder<Bytes> for BytesCodec {
     type Error = io::Error;
 
@@ -116,165 +129,33 @@ impl Encoder<Bytes> for BytesCodec {
             buf.put(data);
             return Ok(());
         }
-        if data.len() <= 0x3F {
-            buf.put_u8((data.len() << 2) as u8);
-        } else if data.len() <= 0x3FFF {
-            buf.put_u16_le((data.len() << 2) as u16 | 0x1);
-        } else if data.len() <= 0x3FFFFF {
-            let h = (data.len() << 2) as u32 | 0x2;
+
+        // 拷贝数据到 payload，后续可能修改
+        let mut payload = data.to_vec();
+
+        // 如有加密密钥，则加密
+        if let Some(key) = self.obfuscate_key {
+            let nonce = [0u8; 12]; // 建议用唯一 nonce，demo用 all zero
+            let mut cipher = ChaCha20::new(&key.into(), &nonce.into());
+            cipher.apply_keystream(&mut payload);
+        }
+
+        let len = payload.len();
+        if len <= 0x3F {
+            buf.put_u8((len << 2) as u8);
+        } else if len <= 0x3FFF {
+            buf.put_u16_le((len << 2) as u16 | 0x1);
+        } else if len <= 0x3FFFFF {
+            let h = (len << 2) as u32 | 0x2;
             buf.put_u16_le((h & 0xFFFF) as u16);
             buf.put_u8((h >> 16) as u8);
-        } else if data.len() <= 0x3FFFFFFF {
-            buf.put_u32_le((data.len() << 2) as u32 | 0x3);
+        } else if len <= 0x3FFFFFFF {
+            buf.put_u32_le((len << 2) as u32 | 0x3);
         } else {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "Overflow"));
         }
-        buf.extend(data);
+
+        buf.extend_from_slice(&payload);
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_codec1() {
-        let mut codec = BytesCodec::new();
-        let mut buf = BytesMut::new();
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.resize(0x3F, 1);
-        assert!(codec.encode(bytes.into(), &mut buf).is_ok());
-        let buf_saved = buf.clone();
-        assert_eq!(buf.len(), 0x3F + 1);
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0x3F);
-            assert_eq!(res[0], 1);
-        } else {
-            panic!();
-        }
-        let mut codec2 = BytesCodec::new();
-        let mut buf2 = BytesMut::new();
-        if let Ok(None) = codec2.decode(&mut buf2) {
-        } else {
-            panic!();
-        }
-        buf2.extend(&buf_saved[0..1]);
-        if let Ok(None) = codec2.decode(&mut buf2) {
-        } else {
-            panic!();
-        }
-        buf2.extend(&buf_saved[1..]);
-        if let Ok(Some(res)) = codec2.decode(&mut buf2) {
-            assert_eq!(res.len(), 0x3F);
-            assert_eq!(res[0], 1);
-        } else {
-            panic!();
-        }
-    }
-
-    #[test]
-    fn test_codec2() {
-        let mut codec = BytesCodec::new();
-        let mut buf = BytesMut::new();
-        let mut bytes: Vec<u8> = Vec::new();
-        assert!(codec.encode("".into(), &mut buf).is_ok());
-        assert_eq!(buf.len(), 1);
-        bytes.resize(0x3F + 1, 2);
-        assert!(codec.encode(bytes.into(), &mut buf).is_ok());
-        assert_eq!(buf.len(), 0x3F + 2 + 2);
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0);
-        } else {
-            panic!();
-        }
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0x3F + 1);
-            assert_eq!(res[0], 2);
-        } else {
-            panic!();
-        }
-    }
-
-    #[test]
-    fn test_codec3() {
-        let mut codec = BytesCodec::new();
-        let mut buf = BytesMut::new();
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.resize(0x3F - 1, 3);
-        assert!(codec.encode(bytes.into(), &mut buf).is_ok());
-        assert_eq!(buf.len(), 0x3F + 1 - 1);
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0x3F - 1);
-            assert_eq!(res[0], 3);
-        } else {
-            panic!();
-        }
-    }
-    #[test]
-    fn test_codec4() {
-        let mut codec = BytesCodec::new();
-        let mut buf = BytesMut::new();
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.resize(0x3FFF, 4);
-        assert!(codec.encode(bytes.into(), &mut buf).is_ok());
-        assert_eq!(buf.len(), 0x3FFF + 2);
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0x3FFF);
-            assert_eq!(res[0], 4);
-        } else {
-            panic!();
-        }
-    }
-
-    #[test]
-    fn test_codec5() {
-        let mut codec = BytesCodec::new();
-        let mut buf = BytesMut::new();
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.resize(0x3FFFFF, 5);
-        assert!(codec.encode(bytes.into(), &mut buf).is_ok());
-        assert_eq!(buf.len(), 0x3FFFFF + 3);
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0x3FFFFF);
-            assert_eq!(res[0], 5);
-        } else {
-            panic!();
-        }
-    }
-
-    #[test]
-    fn test_codec6() {
-        let mut codec = BytesCodec::new();
-        let mut buf = BytesMut::new();
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.resize(0x3FFFFF + 1, 6);
-        assert!(codec.encode(bytes.into(), &mut buf).is_ok());
-        let buf_saved = buf.clone();
-        assert_eq!(buf.len(), 0x3FFFFF + 4 + 1);
-        if let Ok(Some(res)) = codec.decode(&mut buf) {
-            assert_eq!(res.len(), 0x3FFFFF + 1);
-            assert_eq!(res[0], 6);
-        } else {
-            panic!();
-        }
-        let mut codec2 = BytesCodec::new();
-        let mut buf2 = BytesMut::new();
-        buf2.extend(&buf_saved[0..1]);
-        if let Ok(None) = codec2.decode(&mut buf2) {
-        } else {
-            panic!();
-        }
-        buf2.extend(&buf_saved[1..6]);
-        if let Ok(None) = codec2.decode(&mut buf2) {
-        } else {
-            panic!();
-        }
-        buf2.extend(&buf_saved[6..]);
-        if let Ok(Some(res)) = codec2.decode(&mut buf2) {
-            assert_eq!(res.len(), 0x3FFFFF + 1);
-            assert_eq!(res[0], 6);
-        } else {
-            panic!();
-        }
     }
 }

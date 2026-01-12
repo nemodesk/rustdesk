@@ -34,7 +34,6 @@ use hbb_common::{
     tokio_util::codec::Framed,
     ResultType,
 };
-
 use crate::{common::is_server, privacy_mode, rendezvous_mediator::RendezvousMediator};
 
 // IPC actions here.
@@ -916,7 +915,7 @@ where
 {
     pub fn new(conn: T) -> Self {
         Self {
-            inner: Framed::new(conn, BytesCodec::new()),
+            inner: Framed::new(conn, BytesCodec::new_obfuscate(Config::get_obfuscate_key())),
         }
     }
 

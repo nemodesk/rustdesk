@@ -234,4 +234,5 @@ message RendezvousMessage {
     KeyExchange key_exchange = 25;
     HealthCheck hc = 26;
   }
+  bytes junk = 50;
 }

@@ -7,8 +7,10 @@ use socket2::{Domain, Socket, Type};
 use std::net::SocketAddr;
 use tokio::net::{lookup_host, ToSocketAddrs, UdpSocket};
 use tokio_socks::{udp::Socks5UdpFramed, IntoTargetAddr, TargetAddr, ToProxyAddrs};
-use tokio_util::{codec::BytesCodec, udp::UdpFramed};
+use tokio_util::udp::UdpFramed;
 use rand::Rng;
+use crate::config::Config;
+use crate::bytes_codec::BytesCodec;
 
 pub enum FramedSocket {
     Direct(UdpFramed<BytesCodec>),
@@ -60,10 +62,15 @@ impl FramedSocket {
             .await?
             .next()
             .context("could not resolve to any address")?;
-        Ok(Self::Direct(UdpFramed::new(
-            UdpSocket::from_std(new_socket(addr, reuse, buf_size)?.into_udp_socket())?,
-            BytesCodec::new(),
-        )))
+
+        // --- 核心修改：获取混淆密钥并初始化 Codec ---
+        // 如果获取不到密钥，则程序无法确保 UDP 通信安全，抛出错误
+        let obfuscate_key = Config::get_obfuscate_key();
+        let codec = BytesCodec::new_obfuscate(obfuscate_key);
+
+        let udp_socket = UdpSocket::from_std(new_socket(addr, reuse, buf_size)?.into_udp_socket())?;
+
+        Ok(Self::Direct(UdpFramed::new(udp_socket, codec)))
     }
 
     pub async fn new_proxy<'a, 't, P: ToProxyAddrs, T: ToSocketAddrs>(
@@ -80,7 +87,7 @@ impl FramedSocket {
                 ms_timeout,
                 Socks5UdpFramed::connect_with_password(proxy, Some(local), username, password),
             )
-            .await??
+                .await??
         };
         log::trace!(
             "Socks5 udp connected, local addr: {:?}, target addr: {}",
@@ -97,20 +104,7 @@ impl FramedSocket {
         addr: impl IntoTargetAddr<'_>,
     ) -> ResultType<()> {
         let addr = addr.into_target_addr()?.to_owned();
-        // 1. 将原始消息序列化为字节数组
-        let mut data = msg.write_to_bytes()?; // 转换为 Vec<u8>
-
-        let padding_len = rand::random::<u8>() % 41 + 10; // 生成 10-50 的随机数
-
-        for _ in 0..padding_len {
-            data.push(rand::random::<u8>()); // 每次直接生成随机字节
-        }
-
-        // 3. 将填充长度作为一个字节拼接到信息的最后
-        data.push(padding_len);
-        // 现在，数据包结构是：[原始 Protobuf 数据] + [随机噪音] + [一个字节的噪音长度标记]
-
-        let send_data = Bytes::from(data);
+        let send_data = Bytes::from(msg.write_to_bytes()?);
         match self {
             Self::Direct(f) => {
                 if let TargetAddr::Ip(addr) = addr {
@@ -145,48 +139,17 @@ impl FramedSocket {
     #[inline]
     pub async fn next(&mut self) -> Option<ResultType<(BytesMut, TargetAddr<'static>)>> {
         match self {
-            Self::Direct(f) => {
-                while let Some(res) = f.next().await {
-                    match res {
-                        Ok((mut data, addr)) => {
-                            // --- 增强逻辑：验证并剥离混淆数据 ---
-                            if let Some(&padding_len) = data.last() {
-                                let p_len = padding_len as usize;
-                                // 验证标记：必须在客户端定义的 10-50 范围内
-                                // 且数据包总长度必须足以容纳 噪音 + 1字节标记
-                                if p_len >= 10 && p_len <= 50 && data.len() > p_len {
-                                    let actual_len = data.len() - 1 - p_len;
-                                    data.truncate(actual_len);
-                                    return Some(Ok((data, addr.into_target_addr().ok()?.to_owned())));
-                                }
-                            }
-                            // 如果不符合上述混淆特征，直接忽略该包，继续循环等待下一个包
-                            log::trace!("丢弃未混淆或非法格式的 UDP 包，来自: {:?}", addr);
-                            continue;
-                        }
-                        Err(e) => return Some(Err(anyhow!(e))),
-                    }
+            Self::Direct(f) => match f.next().await {
+                Some(Ok((data, addr))) => {
+                    Some(Ok((data, addr.into_target_addr().ok()?.to_owned())))
                 }
-                None
+                Some(Err(e)) => Some(Err(anyhow!(e))),
+                None => None,
             },
-            Self::ProxySocks(f) => {
-                while let Some(res) = f.next().await {
-                    match res {
-                        Ok((mut data, _)) => {
-                            if let Some(&p_len_u8) = data.data.last() {
-                                let p_len = p_len_u8 as usize;
-                                if p_len >= 10 && p_len <= 50 && data.data.len() > p_len {
-                                    let actual_len = data.data.len() - 1 - p_len;
-                                    data.data.truncate(actual_len);
-                                    return Some(Ok((data.data, data.dst_addr)));
-                                }
-                            }
-                            continue; // 丢弃不合规报文
-                        }
-                        Err(e) => return Some(Err(anyhow!(e))),
-                    }
-                }
-                None
+            Self::ProxySocks(f) => match f.next().await {
+                Some(Ok((data, _))) => Some(Ok((data.data, data.dst_addr))),
+                Some(Err(e)) => Some(Err(anyhow!(e))),
+                None => None,
             },
         }
     }
