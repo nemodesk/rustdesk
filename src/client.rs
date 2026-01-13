@@ -26,7 +26,6 @@ use std::{
     },
 };
 use uuid::Uuid;
-
 use crate::{
     check_port,
     common::input::{MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_TYPE_DOWN, MOUSE_TYPE_UP},
@@ -3936,6 +3935,13 @@ pub mod peer_online {
     };
 
     pub async fn query_online_states<F: FnOnce(Vec<String>, Vec<String>)>(ids: Vec<String>, f: F) {
+        // 生成 1 到 5 秒的随机数
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        let delay_seconds = rng.gen_range(1.0..5.0);
+
+        // 直接使用代码中已有的 sleep 函数
+        sleep(delay_seconds).await;
         let test = false;
         if test {
             sleep(1.5).await;

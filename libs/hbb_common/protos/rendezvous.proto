@@ -212,27 +212,27 @@ message HealthCheck {
 
 message RendezvousMessage {
   oneof union {
-    RegisterPeer register_peer = 6;
-    RegisterPeerResponse register_peer_response = 7;
-    PunchHoleRequest punch_hole_request = 8;
-    PunchHole punch_hole = 9;
-    PunchHoleSent punch_hole_sent = 10;
-    PunchHoleResponse punch_hole_response = 11;
-    FetchLocalAddr fetch_local_addr = 12;
-    LocalAddr local_addr = 13;
-    ConfigUpdate configure_update = 14;
-    RegisterPk register_pk = 15;
-    RegisterPkResponse register_pk_response = 16;
-    SoftwareUpdate software_update = 17;
-    RequestRelay request_relay = 18;
-    RelayResponse relay_response = 19;
-    TestNatRequest test_nat_request = 20;
-    TestNatResponse test_nat_response = 21;
-    PeerDiscovery peer_discovery = 22;
-    OnlineRequest online_request = 23;
-    OnlineResponse online_response = 24;
-    KeyExchange key_exchange = 25;
-    HealthCheck hc = 26;
-  }
+      RegisterPeer register_peer = 6;
+      RegisterPeerResponse register_peer_response = 7;
+      PunchHoleRequest punch_hole_request = 8;
+      PunchHole punch_hole = 9;
+      PunchHoleSent punch_hole_sent = 10;
+      PunchHoleResponse punch_hole_response = 11;
+      FetchLocalAddr fetch_local_addr = 12;
+      LocalAddr local_addr = 13;
+      ConfigUpdate configure_update = 14;
+      RegisterPk register_pk = 15;
+      RegisterPkResponse register_pk_response = 16;
+      SoftwareUpdate software_update = 17;
+      RequestRelay request_relay = 18;
+      RelayResponse relay_response = 19;
+      TestNatRequest test_nat_request = 20;
+      TestNatResponse test_nat_response = 21;
+      PeerDiscovery peer_discovery = 22;
+      OnlineRequest online_request = 23;
+      OnlineResponse online_response = 24;
+      KeyExchange key_exchange = 25;
+      HealthCheck hc = 26;
+    }
   bytes junk = 50;
 }
