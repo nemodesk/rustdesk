@@ -17,6 +17,7 @@ import '../../common.dart';
 import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
 import 'peer_card.dart';
+import 'dart:math';
 
 typedef PeerFilter = bool Function(Peer peer);
 typedef PeerCardBuilder = Widget Function(Peer peer);
@@ -311,12 +312,13 @@ class _PeersViewState extends State<_PeersView>
   }
 
   var _queryInterval = const Duration(seconds: 20);
+  final _random = Random();
 
   void _startCheckOnlines() {
     () async {
       final p = await bind.mainIsUsingPublicServer();
       if (!p) {
-        _queryInterval = const Duration(seconds: 6);
+        _queryInterval = const Duration(seconds: 3);
       }
       while (!_exit) {
         final now = DateTime.now();
@@ -336,6 +338,7 @@ class _PeersViewState extends State<_PeersView>
                 bind.queryOnlines(ids: _curPeers.toList(growable: false));
                 _lastQueryTime = DateTime.now();
                 _queryCount += 1;
+                  _queryInterval = Duration(seconds: 3 + _random.nextInt(7));
               }
             }
           }
