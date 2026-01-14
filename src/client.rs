@@ -3980,12 +3980,24 @@ pub mod peer_online {
         ids: &Vec<String>,
         timeout: std::time::Duration,
     ) -> ResultType<(Vec<String>, Vec<String>)> {
+        use rand::Rng;
         let mut msg_out = RendezvousMessage::new();
         msg_out.set_online_request(OnlineRequest {
             id: Config::get_id(),
             peers: ids.clone(),
             ..Default::default()
         });
+
+        // --- 注入垃圾数据逻辑开始 ---
+        // 生成 10 到 50 字节之间的随机长度噪音
+        let padding_len = rand::thread_rng().gen_range(100..127);
+        let mut junk_vec = vec![0u8; padding_len];
+        rand::thread_rng().fill(&mut junk_vec[..]); // 填充随机字节
+
+        // 将噪音注入到 Protobuf 消息中
+        // 注意：请确保在 .proto 文件中已定义 bytes junk 字段并已编译
+        msg_out.junk = ::bytes::Bytes::from(junk_vec);
+        // --- 注入垃圾数据逻辑结束 ---
 
         let mut socket = match create_online_stream().await {
             Ok(s) => s,
